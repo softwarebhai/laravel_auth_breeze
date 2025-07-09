@@ -36,9 +36,14 @@ class RegisteredUserController extends Controller
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
-            'phone' => ['required','string','max:20'],
+            'phone' => ['required', 'string', 'regex:/^01[0-9]{9}$/', 'unique:users'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-        ]);
+        ],[
+            'phone.required' => 'The phone number is required',
+            'phone.regex' => 'The phone number must be exactly 11 digits and start with 01.',
+            'phone.unique' => 'This phone number is already registered.',
+        ]
+    );
 
         $user = User::create([
             'name' => $request->name,

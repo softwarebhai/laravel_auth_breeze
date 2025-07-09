@@ -7,6 +7,7 @@ use App\Http\Requests\Auth\LoginRequest;
 use App\Providers\RouteServiceProvider;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 
 class AuthenticatedSessionController extends Controller
 {
@@ -26,13 +27,40 @@ class AuthenticatedSessionController extends Controller
      * @param  \App\Http\Requests\Auth\LoginRequest  $request
      * @return \Illuminate\Http\RedirectResponse
      */
-    public function store(LoginRequest $request)
-    {
-        $request->authenticate();
+    // public function store(LoginRequest $request)
+    // {
+    //     $request->authenticate();
 
-        $request->session()->regenerate();
+    //     $request->session()->regenerate();
 
-        return redirect()->intended(RouteServiceProvider::HOME);
+    //     return redirect()->intended(RouteServiceProvider::HOME);
+    // }
+
+    public function store(Request $request){
+
+        //Validate login and password fields
+        $request->validate([
+            'login' => 'required|string',
+            'password' => 'required|string',
+        ],[
+            'login.required' => 'Email or phone number is required',
+            'password.required' => 'Password is required',
+        ]);
+
+        //Determin if it's an email or phone number
+        $loginType = filter_var($request->login, FILTER_VALIDATE_EMAIL) ? 'email' : 'phone';
+
+        //Attempt login
+        if(Auth::attempt([ $loginType => $request->login, 'password' => $request->password], $request->boolean('remember'))){
+            $request->session()->regenerate();
+            return redirect()->intended(RouteServiceProvider::HOME);
+        }
+
+        //Failted login
+        throw ValidationException::withMessages([
+            'login' => __('The provided credentials do not match our records'),
+        ]);
+
     }
 
     /**
